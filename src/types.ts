@@ -3,8 +3,10 @@ export interface SurveyData {
   site: string;
   siteOther?: string;
   frequency: string;
+  referredBy?: string;
   qConcerns: number[];
   qBehaviors: number[];
   scoreConcerns?: number;
   scoreBehaviors?: number;
 }
+

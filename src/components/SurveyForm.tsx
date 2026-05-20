@@ -33,6 +33,7 @@ export function SurveyForm({ onSubmit }: Props) {
   const [site, setSite] = useState("");
   const [siteOther, setSiteOther] = useState("");
   const [frequency, setFrequency] = useState("");
+  const [referredBy, setReferredBy] = useState("");
   
   const [qConcerns, setQConcerns] = useState<number[]>(Array(8).fill(0));
   const [qBehaviors, setQBehaviors] = useState<number[]>(Array(5).fill(0));
@@ -43,7 +44,7 @@ export function SurveyForm({ onSubmit }: Props) {
   const handleNext = () => {
     setError("");
     if (currentStep === 1) {
-      if (!age || !site || !frequency || (site === "Other" && !siteOther.trim())) {
+      if (!age || !site || !frequency || !referredBy || (site === "Other" && !siteOther.trim())) {
         setError("Please complete all fields before continuing.");
         return;
       }
@@ -78,6 +79,7 @@ export function SurveyForm({ onSubmit }: Props) {
       site,
       siteOther: site === "Other" ? siteOther : undefined,
       frequency,
+      referredBy: referredBy.trim() || undefined,
       qConcerns,
       qBehaviors,
       scoreConcerns,
@@ -169,6 +171,20 @@ export function SurveyForm({ onSubmit }: Props) {
                 </label>
               ))}
             </div>
+          </div>
+
+          {/* Referral Name */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-3">
+              Who referred you to this survey? <span className="text-slate-400 font-normal"></span>
+            </label>
+            <input 
+              type="text" 
+              placeholder="Enter name (e.g. John Doe)" 
+              value={referredBy}
+              onChange={(e) => setReferredBy(e.target.value)}
+              className="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-sm text-slate-800"
+            />
           </div>
         </div>
       )}

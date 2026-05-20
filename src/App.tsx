@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { SurveyForm } from './components/SurveyForm';
 import type { SurveyData } from './types';
-import { ShieldCheck, Activity } from 'lucide-react';
+import { ShieldCheck, Activity, Download } from 'lucide-react';
 
 export default function App() {
   const [submittedData, setSubmittedData] = useState<SurveyData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSurveySubmit = async (data: SurveyData) => {
@@ -28,6 +29,116 @@ export default function App() {
       setError('An error occurred while saving your response. Please try again.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDownloadExcel = async () => {
+    setIsDownloading(true);
+    setError('');
+    try {
+      const response = await fetch('/api/results');
+      if (!response.ok) {
+        throw new Error('Failed to fetch results');
+      }
+      const results = await response.json();
+      
+      if (!results || results.length === 0) {
+        setError('No survey responses available to download.');
+        return;
+      }
+
+      // Calculate averages by age group
+      const AGE_GROUPS = ["14-18", "19-30", "31-54", "55 and up"];
+      const averagesByAgeGroup = AGE_GROUPS.map(group => {
+        const groupResponses = results.filter((r: any) => r.age === group);
+        if (groupResponses.length === 0) {
+          return { group, avgConcern: "N/A", avgBehavior: "N/A" };
+        }
+        const sumConcern = groupResponses.reduce((sum: number, r: any) => sum + (r.score_concerns || 0), 0);
+        const sumBehavior = groupResponses.reduce((sum: number, r: any) => sum + (r.score_behaviors || 0), 0);
+        return {
+          group,
+          avgConcern: (sumConcern / groupResponses.length).toFixed(2),
+          avgBehavior: (sumBehavior / groupResponses.length).toFixed(2)
+        };
+      });
+
+      const escapeCSV = (val: any) => {
+        if (val === null || val === undefined) return '';
+        const str = String(val);
+        if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+
+      const headers = [
+        "Referrer",
+        "Age",
+        "SiteUsedMostFrequently",
+        "FrequencyOfUse",
+        "PrivacyConcernScore",
+        "PrivacyBehaviorScore",
+        "",
+        "Age Group",
+        "Average Privacy Concern Score",
+        "Average Privacy Behavior Score"
+      ];
+
+      const rows = [headers.join(",")];
+      const maxLength = Math.max(results.length, averagesByAgeGroup.length);
+
+      for (let i = 0; i < maxLength; i++) {
+        const rowParts: string[] = [];
+        
+        // Left side: Raw survey data
+        if (i < results.length) {
+          const r = results[i];
+          const siteVal = r.site === "Other" && r.site_other ? `Other (${r.site_other})` : r.site;
+          rowParts.push(
+            escapeCSV(r.referred_by || "Direct / Unknown"),
+            escapeCSV(r.age),
+            escapeCSV(siteVal),
+            escapeCSV(r.frequency),
+            escapeCSV(r.score_concerns),
+            escapeCSV(r.score_behaviors)
+          );
+        } else {
+          rowParts.push("", "", "", "", "", "");
+        }
+
+        // Empty column separator
+        rowParts.push("");
+
+        // Right side: Averages by age group
+        if (i < averagesByAgeGroup.length) {
+          const avg = averagesByAgeGroup[i];
+          rowParts.push(
+            escapeCSV(avg.group),
+            escapeCSV(avg.avgConcern),
+            escapeCSV(avg.avgBehavior)
+          );
+        } else {
+          rowParts.push("", "", "");
+        }
+
+        rows.push(rowParts.join(","));
+      }
+
+      const csvContent = "\uFEFF" + rows.join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `survey_responses_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to download the survey results. Please try again.');
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -77,9 +188,17 @@ export default function App() {
         <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4 tracking-tight">
           Social Media & Privacy Survey
         </h1>
-        <p className="text-slate-600 max-w-2xl mx-auto text-lg leading-relaxed">
+        <p className="text-slate-600 max-w-2xl mx-auto text-lg leading-relaxed mb-6">
           We want to understand your social media usage patterns and your attitudes towards online privacy. This survey will take approximately 2 minutes.
         </p>
+        <button
+          onClick={handleDownloadExcel}
+          disabled={isDownloading}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 active:bg-slate-100 transition-all shadow-sm disabled:opacity-50 cursor-pointer hover:shadow"
+        >
+          <Download className="w-4 h-4 text-indigo-600" />
+          {isDownloading ? 'Generating Report...' : 'Download Excel Report'}
+        </button>
       </div>
 
       {error && (
