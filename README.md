@@ -1,6 +1,11 @@
+Designed to allow for the easy collection and export of data required for my school project!
 
-1. Install dependencies:
-   `npm install`
+The teacher gave us a .docx file of questions which we were supposed to send to 25 peopl each, with 4 people in the group.
 
-2. Run the app:
-   `npm run dev`
+Instead of forcing 100 people to mess with a .docx file, I built a website catered to mobile and desktop users to make the process as seamless as possible.
+
+Data is collected into a SQLite database, with an easy export option which gives me the values I needed for the group project.
+
+No manual counting up, averaging, or opening tons of files!!!
+
+Built using Node.JS, hosted on Azure cloud.
