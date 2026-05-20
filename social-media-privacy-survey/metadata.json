@@ -1,0 +1,6 @@
+{
+  "name": "Social Media & Privacy Survey",
+  "description": "A full-stack survey application tracking social media usage and online privacy attitudes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
